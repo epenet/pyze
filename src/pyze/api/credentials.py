@@ -7,6 +7,11 @@ import time
 
 TOKEN_STORE = os.environ.get('PYZE_TOKEN_STORE', os.path.expanduser('~/.credentials/pyze.json'))
 
+PERMANENT_KEYS = [
+    'gigya-api-key',
+    'kamereon-api-key'
+]
+
 
 class MissingCredentialException(Exception):
     pass
@@ -17,7 +22,7 @@ def requires_credentials(*names):
         def inner(*args, **kwargs):
             for name in names:
                 if name not in CredentialStore():
-                    raise MissingCredentialException()
+                    raise MissingCredentialException(name)
             return func(*args, **kwargs)
 
         return inner
@@ -32,8 +37,7 @@ def init_store():
 
             for key, value in stored.items():
                 new_store[key] = Credential(value['token'], value['expiry'])
-
-    except:
+    except Exception:
         pass
 
     return new_store
@@ -50,6 +54,7 @@ class CredentialStore(object):
     class _CredentialStore(object):
         def __init__(self):
             self._store = init_store()
+            self._add_api_keys_from_env()
 
         def __getitem__(self, name):
             if name in self._store:
@@ -62,6 +67,10 @@ class CredentialStore(object):
             return self.store(name, *value)
 
         def store(self, name, token, expiry):
+            if not isinstance(name, str):
+                raise RuntimeError('Credential name must be a string')
+            if not isinstance(token, str):
+                raise RuntimeError('Credential value must be a string')
             self._store[name] = Credential(token, expiry)
             self._write()
 
@@ -79,8 +88,17 @@ class CredentialStore(object):
                 return False
 
         def clear(self):
-            self._store = {}
+            for k in list(self._store.keys()):
+                if k not in PERMANENT_KEYS:
+                    del self._store[k]
             self._write()
+
+        def _add_api_keys_from_env(self):
+            if 'GIGYA_API_KEY' in os.environ:
+                self.store('gigya-api-key', os.environ['GIGYA_API_KEY'], None)
+
+            if 'KAMEREON_API_KEY' in os.environ:
+                self.store('kamereon-api-key', os.environ['KAMEREON_API_KEY'], None)
 
 
 Credential = namedtuple(

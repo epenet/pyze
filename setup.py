@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-_VERSION = '0.1.0'
+_VERSION = '0.4.0'
 
 setup(
     name='PyZE',
@@ -9,7 +9,7 @@ setup(
     author='James Muscat',
     author_email='jamesremuscat@gmail.com',
     url='https://github.com/jamesremuscat/pyze',
-    packages=['pyze'],
+    packages=find_packages('src'),
     package_dir={'': 'src'},
     long_description="Unofficial client and API for Renault ZE.",
     install_requires=[
@@ -18,17 +18,24 @@ setup(
         'python-dateutil',
         'requests',
         'simplejson',
-        'tabulate'
+        'tabulate',
+        'tzlocal'
     ],
     setup_requires=[
         'pytest-runner',
     ],
     tests_require=[
-        'pytest'
+        'pytest',
+        'pytest-cov'
     ],
     entry_points={
         'console_scripts': [
             'pyze = pyze.cli.__main__:main'
         ],
-    }
+    },
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ]
 )

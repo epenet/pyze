@@ -2,7 +2,10 @@ import argparse
 import importlib
 import logging
 import requests
+import aiohttp
 import sys
+import asyncio
+import inspect
 
 from .ac import run as ac
 from .login import run as login
@@ -51,7 +54,6 @@ def argument_parser():
 
 
 def main(args=None):
-
     if args is None:
         args = sys.argv[1:]
 
@@ -66,8 +68,16 @@ def main(args=None):
         parsed_args = parser.parse_args(args + ['status'])
 
     try:
-        parsed_args.func(parsed_args)
+        parsed_func = parsed_args.func
+        if inspect.iscoroutinefunction(parsed_func):
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(parsed_func(parsed_args))
+        else:
+            parsed_func(parsed_args)
     except requests.RequestException as e:
+        print("Error communicating with Renault API!")
+        print(e.response.text)
+    except aiohttp.client_exceptions.ClientResponseError as e:
         print("Error communicating with Renault API!")
         print(e.response.text)
 

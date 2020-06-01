@@ -1,5 +1,5 @@
 from datetime import timedelta
-from pyze.api import Kamereon, Vehicle
+from pyze.api import KamereonAsync, VehicleAsync
 
 import dateparser
 
@@ -18,31 +18,32 @@ def parse_date(raw_date):
     return dateparser.parse(raw_date)
 
 
-def get_vehicle(parsed_args):
-    k = Kamereon()
+async def get_vehicle(websession, parsed_args):
+    k = KamereonAsync(websession=websession)
 
-    vehicles = k.get_vehicles().get('vehicleLinks')
+    vehicles = await k.get_vehicles()
+    vehicle_links = vehicles.get('vehicleLinks')
     if parsed_args.vin:
-        possible_vehicles = [v for v in vehicles if v['vin'] == parsed_args.vin]
+        possible_vehicles = [v for v in vehicle_links if v['vin'] == parsed_args.vin]
         if len(possible_vehicles) == 0:
             raise RuntimeError('Specified VIN {} not found! Use `pyze vehicles` to list available vehicles.'.format(parsed_args.vin))
 
         vin = possible_vehicles[0]['vin']
 
     elif parsed_args.reg:
-        possible_vehicles = [v for v in vehicles if v['vehicleDetails']['registrationNumber'] == parsed_args.vin.replace(' ', '').upper()][0]
+        possible_vehicles = [v for v in vehicle_links if v['vehicleDetails']['registrationNumber'] == parsed_args.vin.replace(' ', '').upper()][0]
 
         if len(possible_vehicles) == 0:
             raise RuntimeError('Specified registration plate {} not found! Use `pyze vehicles` to list available vehicles.'.format(parsed_args.reg))
 
         vin = possible_vehicles[0]['vin']
 
-    elif len(vehicles) == 0:
+    elif len(vehicle_links) == 0:
         raise RuntimeError('No vehicles found for this account!')
     else:
-        vin = vehicles[0]['vin']
+        vin = vehicle_links[0]['vin']
 
-    return Vehicle(vin, k)
+    return VehicleAsync(vin, k)
 
 
 def format_duration_minutes(mins):
